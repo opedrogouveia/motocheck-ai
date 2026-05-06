@@ -1,37 +1,46 @@
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
-// Tabela de Usuários (Preparada para Auth)
+
 model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
-  password  String   // Aqui vai o hash da senha (nunca a senha em texto puro)
+  password  String   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relacionamento: Um usuário possui várias análises (TCC)
   analyses  Analysis[]
 
-  @@map("users") // Boa prática: cria a tabela com nome no plural minúsculo no banco
+  @@map("users") 
 }
 
-// Tabela de Análises (O Core do MotoCheck AI)
 model Analysis {
   id              String   @id @default(uuid())
   adText          String   @db.Text
-  riskLevel       String   // "LOW", "MEDIUM", "HIGH"
+  riskLevel       String   
   suspiciousTerms String[] 
   questionsToAsk  String[] 
   createdAt       DateTime @default(now())
 
-  // Relacionamento com o usuário que fez a análise
   userId          String
   user            User     @relation(fields: [userId], references: [id])
+  
+  tags            Tag[]    
 
   @@map("analyses")
+}
+
+model Tag {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  
+  analyses  Analysis[] 
+
+  @@map("tags")
 }
