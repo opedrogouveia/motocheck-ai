@@ -7,9 +7,33 @@ import { PrismaService } from '../../../../../shared/infra/prisma/PrismaService'
 export class PrismaUsersRepository implements IUsersRepository {
   constructor(private prisma: PrismaService) {}
 
-  // Corrigido para Promise<User>
+  async findAll(): Promise<User[]> {
+    const users = await this.prisma.client.user.findMany();
+
+    return users.map((user) => User.create(user));
+  }
+
+  async findById(id: string): Promise<User | null> {
+    const user = await this.prisma.client.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) return null;
+
+    return User.create(user);
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    const rawUser = await this.prisma.client.user.findUnique({
+      where: { email },
+    });
+
+    if (!rawUser) return null;
+
+    return User.create(rawUser);
+  }
+
   async create(user: User): Promise<User> {
-    // Corrigido para usar this.prisma.client
     const createdUser = await this.prisma.client.user.create({
       data: {
         id: user.id,
@@ -22,14 +46,22 @@ export class PrismaUsersRepository implements IUsersRepository {
     return User.create(createdUser);
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    // Corrigido para usar this.prisma.client
-    const rawUser = await this.prisma.client.user.findUnique({
-      where: { email },
+  async update(id: string, data: Partial<User>): Promise<User> {
+    const updated = await this.prisma.client.user.update({
+      where: { id },
+      data: {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      },
     });
 
-    if (!rawUser) return null;
+    return User.create(updated);
+  }
 
-    return User.create(rawUser);
+  async delete(id: string): Promise<void> {
+    await this.prisma.client.user.delete({
+      where: { id },
+    });
   }
 }
