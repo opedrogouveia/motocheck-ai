@@ -1,5 +1,12 @@
+// ==========================================================
+//  MotoCheck AI — Prisma schema
+//  Modelo de domínio: usuários, conversas (chat), mensagens,
+//  análises estruturadas do agente e catálogo de modelos de
+//  moto com problemas conhecidos (base de conhecimento / RAG).
+// ==========================================================
+
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
   engineType = "library"
 }
 
@@ -7,40 +14,233 @@ datasource db {
   provider = "postgresql"
 }
 
+// ---------------------- Enums ----------------------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum QuestionStatus {
+  PENDING
+  ANSWERED
+  SKIPPED
+}
+
+enum SellerType {
+  DEALER // loja / concessionária
+  PRIVATE // particular
+}
+
+// ---------------------- Identidade ----------------------
+
 model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
-  password  String   
+  password  String
+  role      Role     @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  analyses  Analysis[]
+  conversations Conversation[]
 
-  @@map("users") 
+  @@map("users")
 }
 
+// ---------------------- Chat ----------------------
+
+model Conversation {
+  id        String   @id @default(uuid())
+  title     String   @default("Nova conversa")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  messages           Message[]
+  analyses           Analysis[]
+  suggestedQuestions SuggestedQuestion[]
+  motorcycle         Motorcycle?
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id        String      @id @default(uuid())
+  role      MessageRole
+  content   String      @db.Text
+  createdAt DateTime    @default(now())
+
+  // Telemetria opcional (custo/observabilidade)
+  model        String?
+  tokensInput  Int?
+  tokensOutput Int?
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Análise gerada nesta mensagem do assistente (1:1 opcional)
+  analysisId String?   @unique
+  analysis   Analysis? @relation("MessageAnalysis", fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ---------------------- Moto em análise ----------------------
+
+// Dados estruturados da moto discutida na conversa (1:1 com a conversa).
+model Motorcycle {
+  id          String      @id @default(uuid())
+  brand       String?
+  model       String?
+  year        Int?
+  mileageKm   Int?
+  priceBRL    Decimal?    @db.Decimal(10, 2)
+  location    String?
+  sellerType  SellerType?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  conversationId String       @unique
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Liga ao catálogo de modelos conhecidos (base de conhecimento)
+  modelCatalogId String?
+  modelCatalog   MotorcycleModel? @relation(fields: [modelCatalogId], references: [id])
+
+  @@map("motorcycles")
+}
+
+// ---------------------- Base de conhecimento (catálogo) ----------------------
+
+// Catálogo de modelos. Enriquecido manualmente — quanto mais completo,
+// mais "especialista" fica o agente (via RAG), sem retreinar nada.
+model MotorcycleModel {
+  id        String   @id @default(uuid())
+  brand     String
+  name      String // ex.: "CG 160 Fan"
+  category  String? // ex.: "Street", "Trail"
+  createdAt DateTime @default(now())
+
+  knownIssues KnownIssue[]
+  motorcycles Motorcycle[]
+
+  @@unique([brand, name])
+  @@map("motorcycle_models")
+}
+
+// Problemas conhecidos de cada modelo — o que o agente consulta.
+model KnownIssue {
+  id            String   @id @default(uuid())
+  title         String
+  description   String   @db.Text
+  severity      Severity @default(MEDIUM)
+  symptom       String? // sintoma observável
+  inspectionTip String?  @db.Text // como verificar na vistoria
+  createdAt     DateTime @default(now())
+
+  modelId String
+  model   MotorcycleModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@map("known_issues")
+}
+
+// ---------------------- Análise estruturada do agente ----------------------
+
+// Snapshot de análise produzido pelo agente em um ponto da conversa.
 model Analysis {
-  id              String   @id @default(uuid())
-  adText          String   @db.Text
-  riskLevel       String   
-  suspiciousTerms String[] 
-  questionsToAsk  String[] 
-  createdAt       DateTime @default(now())
+  id        String    @id @default(uuid())
+  riskLevel RiskLevel
+  summary   String    @db.Text
+  createdAt DateTime  @default(now())
 
-  userId          String
-  user            User     @relation(fields: [userId], references: [id])
-  
-  tags            Tag[]    
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
+  redFlags           RedFlag[]
+  recommendations    Recommendation[]
+  suggestedQuestions SuggestedQuestion[]
+  tags               Tag[]
+  message            Message?            @relation("MessageAnalysis")
+
+  @@index([conversationId])
   @@map("analyses")
 }
 
+model RedFlag {
+  id          String   @id @default(uuid())
+  category    String // ex.: "Mecânica", "Documentação"
+  description String   @db.Text
+  severity    Severity @default(MEDIUM)
+
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@map("red_flags")
+}
+
+model Recommendation {
+  id   String  @id @default(uuid())
+  text String  @db.Text
+  type String? // ex.: "Negociação", "Vistoria"
+
+  analysisId String
+  analysis   Analysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  @@index([analysisId])
+  @@map("recommendations")
+}
+
+// Perguntas que o agente sugere ao usuário fazer ao vendedor.
+// O usuário devolve a resposta -> vira memória que o agente reusa.
+model SuggestedQuestion {
+  id         String         @id @default(uuid())
+  question   String         @db.Text
+  answer     String?        @db.Text
+  status     QuestionStatus @default(PENDING)
+  createdAt  DateTime       @default(now())
+  answeredAt DateTime?
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  analysisId String?
+  analysis   Analysis? @relation(fields: [analysisId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId])
+  @@map("suggested_questions")
+}
+
 model Tag {
-  id        String     @id @default(uuid())
-  name      String     @unique
-  
-  analyses  Analysis[] 
+  id   String @id @default(uuid())
+  name String @unique
+
+  analyses Analysis[]
 
   @@map("tags")
 }

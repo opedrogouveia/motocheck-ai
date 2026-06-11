@@ -7,9 +7,12 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',
+    // Popular o banco com o catálogo inicial de modelos/problemas.
+    seed: 'npx tsx prisma/seed.ts',
   },
   datasource: {
-    url: process.env.DATABASE_URL,
-    // directUrl: process.env.DIRECT_URL,
+    // Migrations usam a conexão direta (DIRECT_URL, sem pgbouncer).
+    // Em runtime, a app usa o adapter pg (DATABASE_URL) no PrismaService.
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL,
   },
 });

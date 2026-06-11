@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '../../shared/infra/prisma/PrismaService';
 import { IUsersRepository } from './domain/repositories/IUsersRepository';
 import { PrismaUsersRepository } from './infra/prisma/repositories/PrismaUsersRepository';
 import { UsersController } from './infra/http/controllers/UsersController';
@@ -12,7 +11,6 @@ import { DeleteUserUseCase } from './useCases/deleteUser/DeleteUserUseCase';
 @Module({
   controllers: [UsersController],
   providers: [
-    PrismaService,
     { provide: IUsersRepository, useClass: PrismaUsersRepository },
     ListUsersUseCase,
     FindUserByIdUseCase,
@@ -20,5 +18,6 @@ import { DeleteUserUseCase } from './useCases/deleteUser/DeleteUserUseCase';
     UpdateUserUseCase,
     DeleteUserUseCase,
   ],
+  exports: [IUsersRepository, CreateUserUseCase],
 })
 export class UsersModule {}
