@@ -57,6 +57,25 @@ Em termos de **segurança**, todas as rotas do backend são protegidas por auten
 
 A interface é composta por uma tela de **login/cadastro**, um **menu lateral** com a lista de conversas (criar, renomear, excluir), a **área de chat** (mensagens do usuário e do agente) e um **painel de análise** fixo, que exibe os dados da moto, o nível de risco, os sinais de alerta, as recomendações e as perguntas ao vendedor.
 
+### Soluções de Segurança
+
+A segurança foi tratada como requisito transversal, aplicada em várias camadas (*defense in depth*). As soluções efetivamente implementadas são:
+
+1. **Hash de senha com bcrypt (nunca em texto puro).** As senhas são cifradas com `bcrypt` (fator de custo 10) no cadastro e comparadas com `bcrypt.compare` no login. O banco jamais armazena a senha original; um vazamento do banco não expõe as credenciais. *Implementação:* `CreateUserUseCase` e `LoginUseCase`.
+2. **Autenticação stateless por JWT com *guard* global (*secure by default*).** Todas as rotas do backend exigem token por padrão; apenas as marcadas explicitamente com `@Public()` (login, cadastro e leitura do catálogo) ficam abertas. Isso impede que uma rota nova seja exposta por esquecimento. *Implementação:* `JwtAuthGuard` registrado como `APP_GUARD` global + decorator `@Public()`.
+3. **Token em *cookie httpOnly* + *proxy* servidor-a-servidor.** O JWT é gravado em um cookie `httpOnly` (inacessível ao JavaScript do navegador, mitigando roubo de token por **XSS**) com `sameSite: lax` (mitiga **CSRF**) e flag `secure` em produção (trafega só sobre HTTPS). O navegador nunca fala diretamente com o backend: conversa apenas com o próprio servidor Next, que atua como *proxy* e anexa o token no lado do servidor. Além de proteger o token, isso elimina a exposição de CORS no cliente. *Implementação:* `lib/authCookie.ts` e `app/api/backend/[...path]/route.ts`.
+4. **Validação e sanitização de toda entrada (*ValidationPipe* global + DTOs).** Todo dado que entra na API passa por um `ValidationPipe` global com `class-validator` (ex.: `@IsEmail`, `@MinLength`, `@MaxLength`), rejeitando payloads malformados antes de chegar à lógica de negócio e reduzindo a superfície para injeção e dados inconsistentes. *Implementação:* `main.ts` (pipe global) + DTOs por caso de uso.
+5. **Proteção contra SQL Injection via ORM parametrizado.** O acesso ao banco é feito exclusivamente pelo Prisma, que gera *prepared statements* parametrizados — não há concatenação de SQL com entrada do usuário.
+6. **Isolamento de dados por usuário (autorização).** Cada usuário só acessa suas próprias conversas: as consultas filtram pelo `userId` extraído do token, impedindo acesso horizontal a dados de terceiros (*IDOR*).
+7. **Gestão de segredos por variáveis de ambiente.** Chaves (`JWT_SECRET`, credenciais de banco, chaves de API de IA) ficam em variáveis de ambiente fora do versionamento (`.gitignore`), com um `.env.example` documentando o formato sem expor valores. CORS é restrito à origem do frontend (`CORS_ORIGIN`).
+
+### Soluções de Performance
+
+1. **RAG seletivo (recuperação sob demanda).** Em vez de injetar todo o catálogo de conhecimento no *prompt*, o método `findRelevant` recupera apenas os modelos pertinentes à moto mencionada no anúncio. Isso reduz o número de *tokens* enviados ao LLM — diminuindo latência e custo por análise — e mantém o desempenho estável mesmo conforme o catálogo cresce.
+2. **Janela de contexto limitada + *prompt caching*.** O contexto enviado ao modelo usa apenas as últimas mensagens da conversa (janela deslizante), evitando o crescimento ilimitado do *payload*. No provedor Claude, o *prompt* de sistema (grande e estável) usa *prompt caching*, reutilizando o processamento entre requisições e reduzindo latência e custo.
+3. **Persistência do turno em transação única.** A gravação da resposta do agente (mensagem + análise + *red flags* + recomendações + perguntas) ocorre em uma única transação do Prisma (`saveAgentTurn`), reduzindo *round-trips* ao banco e garantindo atomicidade.
+4. **Renderização no servidor e navegação client-side.** O uso de *Server Components*/SSR no carregamento inicial reduz o trabalho no cliente, enquanto a navegação subsequente é *client-side* (sem *reloads*), tornando a interface mais responsiva (ver *Modelo de Renderização*).
+
 ## Arquitetura
 
 O sistema segue uma arquitetura em camadas. O **frontend** (Next.js) cuida da interface e de um proxy seguro; o **backend** (NestJS) concentra a lógica de negócio em módulos seguindo Clean Architecture/DDD (entidades → repositórios → casos de uso → controladores); a **persistência** usa Prisma sobre PostgreSQL (Supabase); e a **IA** é acessada por uma camada abstrata (`ILLMProvider`) que conversa com Gemini ou Claude.
@@ -64,6 +83,16 @@ O sistema segue uma arquitetura em camadas. O **frontend** (Next.js) cuida da in
 **Fluxo de uma análise:** o usuário envia uma mensagem → o backend persiste a mensagem, monta o contexto (histórico + dados da moto + última análise + perguntas + conhecimento do catálogo) → chama o LLM exigindo saída estruturada → persiste a resposta, a análise e as perguntas → o frontend exibe o resultado.
 
 Repositório do projeto: https://github.com/opedrogouveia/motocheck-ai
+
+### Modelo de Renderização
+
+O frontend adota o modelo **híbrido** do Next.js (App Router), combinando renderização no servidor e no cliente conforme a necessidade de cada tela:
+
+- **Server Components / SSR** são usados onde a renderização no servidor traz ganho de segurança ou desempenho. O caso mais importante é o *layout* protegido do chat, um *Server Component* que lê o *cookie* de sessão e redireciona para o login **antes** de qualquer conteúdo chegar ao navegador — a verificação de acesso não depende de JavaScript no cliente. Os *Route Handlers* do Next (o *proxy* para o backend) também executam no servidor, mantendo o token fora do alcance do navegador.
+- **Client Components** (`"use client"`) são usados nas partes interativas — formulários de login/cadastro, chat, sidebar e painel de análise — que dependem de estado e eventos do usuário (`useState`, `useContext`, `useEffect`).
+- **Navegação *client-side* (comportamento de SPA):** após o carregamento inicial, a troca de telas (ex.: abrir uma conversa em `/c/[id]`) e a atualização da interface ocorrem no próprio navegador, sem recarregar a página, consumindo a API REST de forma assíncrona via `fetch`.
+
+Essa escolha entrega o melhor dos dois modelos: a proteção de rotas e o *proxy* seguro no servidor, e a fluidez de uma *Single Page Application* na interação. A justificativa central é que a **decisão de segurança** (token nunca no cliente) e a **experiência de uso** (interface reativa, sem *reloads*) puderam coexistir graças ao modelo de renderização híbrido.
 
 ### Artefato 1 — Diagrama de Entidade-Relacionamento (ER)
 
@@ -81,17 +110,78 @@ erDiagram
     MotorcycleModel ||--o{ KnownIssue : tem
     MotorcycleModel ||--o{ Motorcycle : referencia
 
-    User { string id PK; string name; string email UK; string password; Role role }
-    Conversation { string id PK; string title; string userId FK }
-    Message { string id PK; MessageRole role; text content; string conversationId FK; string analysisId FK }
-    Motorcycle { string id PK; string brand; string model; int year; int mileageKm; decimal priceBRL; string conversationId FK; string modelCatalogId FK }
-    MotorcycleModel { string id PK; string brand; string name; string category }
-    KnownIssue { string id PK; string title; text description; Severity severity; string modelId FK }
-    Analysis { string id PK; RiskLevel riskLevel; text summary; string conversationId FK }
-    RedFlag { string id PK; string category; text description; Severity severity; string analysisId FK }
-    Recommendation { string id PK; text text; string type; string analysisId FK }
-    SuggestedQuestion { string id PK; text question; text answer; QuestionStatus status; string conversationId FK }
-    Tag { string id PK; string name UK }
+    User {
+        string id PK
+        string name
+        string email UK
+        string password
+        Role role
+    }
+    Conversation {
+        string id PK
+        string title
+        string userId FK
+    }
+    Message {
+        string id PK
+        MessageRole role
+        text content
+        string conversationId FK
+        string analysisId FK
+    }
+    Motorcycle {
+        string id PK
+        string brand
+        string model
+        int year
+        int mileageKm
+        decimal priceBRL
+        string conversationId FK
+        string modelCatalogId FK
+    }
+    MotorcycleModel {
+        string id PK
+        string brand
+        string name
+        string category
+    }
+    KnownIssue {
+        string id PK
+        string title
+        text description
+        Severity severity
+        string modelId FK
+    }
+    Analysis {
+        string id PK
+        RiskLevel riskLevel
+        text summary
+        string conversationId FK
+    }
+    RedFlag {
+        string id PK
+        string category
+        text description
+        Severity severity
+        string analysisId FK
+    }
+    Recommendation {
+        string id PK
+        text text
+        string type
+        string analysisId FK
+    }
+    SuggestedQuestion {
+        string id PK
+        text question
+        text answer
+        QuestionStatus status
+        string conversationId FK
+    }
+    Tag {
+        string id PK
+        string name UK
+    }
 ```
 
 *O diagrama é renderizado automaticamente no GitHub (bloco mermaid) e pode ser exportado como imagem em mermaid.live.*

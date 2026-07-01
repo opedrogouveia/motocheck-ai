@@ -1,0 +1,5 @@
+# Ferramentas de IA e arquivos locais (nao versionar)
+.claude/
+docs/HANDOFF.md
+frontend/AGENTS.md
+frontend/CLAUDE.md
