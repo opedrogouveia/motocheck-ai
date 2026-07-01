@@ -128,7 +128,14 @@ export default function Sidebar({ onLogout }: { onLogout: () => void }) {
         </ul>
       </nav>
 
-      <div className="border-t border-border p-3">
+      <div className="space-y-2 border-t border-border p-3">
+        <Link
+          href="/compare"
+          onClick={closeOnMobile}
+          className="block w-full rounded-lg border border-border py-2 text-center text-sm transition hover:bg-background"
+        >
+          Comparar motos
+        </Link>
         <button
           onClick={onLogout}
           className="w-full rounded-lg border border-border py-2 text-sm text-muted transition hover:bg-background"

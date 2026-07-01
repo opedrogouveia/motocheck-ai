@@ -79,3 +79,19 @@ export interface SendMessageResult {
   suggestedQuestions: QuestionView[];
   newTitle: string | null;
 }
+
+export type ComparisonRecommendation = 'RECOMMEND' | 'CONSIDER' | 'AVOID';
+
+export interface ComparisonItem {
+  conversationId: string;
+  title: string;
+  recommendation: ComparisonRecommendation;
+  rank: number;
+  reason: string;
+}
+
+export interface ComparisonResult {
+  verdict: string;
+  bestConversationId: string | null;
+  items: ComparisonItem[];
+}

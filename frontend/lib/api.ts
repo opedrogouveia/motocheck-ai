@@ -5,6 +5,7 @@
 
 import type {
   AuthUser,
+  ComparisonResult,
   ConversationDetail,
   ConversationSummary,
   QuestionView,
@@ -80,5 +81,11 @@ export const api = {
     request<QuestionView>(`/api/backend/conversations/${id}/questions/${questionId}`, {
       method: 'PATCH',
       body: JSON.stringify({ answer }),
+    }),
+
+  compareConversations: (conversationIds: string[]) =>
+    request<ComparisonResult>('/api/backend/conversations/compare', {
+      method: 'POST',
+      body: JSON.stringify({ conversationIds }),
     }),
 };
