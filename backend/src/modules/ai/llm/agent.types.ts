@@ -1,9 +1,8 @@
 /**
  * Contrato da saída ESTRUTURADA do agente.
  *
- * Independente do provedor (Gemini ou Claude), o agente sempre devolve
- * este formato. `reply` é o texto conversacional; os demais campos são
- * os dados que persistimos (análise, moto, perguntas).
+ * O agente sempre devolve este formato. `reply` é o texto conversacional;
+ * os demais campos são os dados que persistimos (análise, moto, perguntas).
  */
 
 export type RiskLevelValue = 'LOW' | 'MEDIUM' | 'HIGH';
@@ -49,7 +48,7 @@ export interface AgentResponse {
 }
 
 /**
- * JSON Schema da resposta — usado pelo Claude (tool use) e como referência.
+ * JSON Schema da resposta — referência do formato estruturado esperado.
  */
 export const AGENT_OUTPUT_SCHEMA = {
   type: 'object',

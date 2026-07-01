@@ -42,7 +42,7 @@ A ausência de uma ferramenta acessível que oriente o comprador leigo exatament
 - **NestJS + TypeScript** — framework do backend, escolhido por sua arquitetura modular, injeção de dependência e bom suporte a Clean Architecture/DDD, favorecendo organização e testabilidade.
 - **Prisma ORM + PostgreSQL (Supabase)** — ORM tipado e banco relacional na nuvem. O modelo relacional rico (conversas, mensagens, análises, catálogo) justifica o uso de um banco SQL.
 - **Autenticação JWT** (`@nestjs/jwt` + Passport) — autenticação stateless por token, com *guard* global e rotas públicas marcadas explicitamente (*secure by default*).
-- **Inteligência Artificial — arquitetura provider-agnóstica:** uma interface `ILLMProvider` com implementações para **Google Gemini** (gratuito, usado em desenvolvimento) e **Anthropic Claude** (pago, opção de maior precisão para a versão final). A troca de provedor é feita por variável de ambiente.
+- **Inteligência Artificial — Google Gemini:** o acesso ao modelo é isolado por uma interface `ILLMProvider`, com implementação para o **Google Gemini** (`@google/generative-ai`). A saída é forçada a JSON estruturado (`responseMimeType`) e normalizada antes de ser persistida. A especialização do agente vem de *prompt* + RAG, sem *fine-tuning*.
 - **Deploy:** **Vercel** (frontend) e **Render** (backend), com banco no **Supabase** — integração contínua via Git (push → deploy automático).
 
 ## Descrição da Solução
@@ -72,13 +72,13 @@ A segurança foi tratada como requisito transversal, aplicada em várias camadas
 ### Soluções de Performance
 
 1. **RAG seletivo (recuperação sob demanda).** Em vez de injetar todo o catálogo de conhecimento no *prompt*, o método `findRelevant` recupera apenas os modelos pertinentes à moto mencionada no anúncio. Isso reduz o número de *tokens* enviados ao LLM — diminuindo latência e custo por análise — e mantém o desempenho estável mesmo conforme o catálogo cresce.
-2. **Janela de contexto limitada + *prompt caching*.** O contexto enviado ao modelo usa apenas as últimas mensagens da conversa (janela deslizante), evitando o crescimento ilimitado do *payload*. No provedor Claude, o *prompt* de sistema (grande e estável) usa *prompt caching*, reutilizando o processamento entre requisições e reduzindo latência e custo.
+2. **Janela de contexto limitada.** O contexto enviado ao modelo usa apenas as últimas mensagens da conversa (janela deslizante), evitando o crescimento ilimitado do *payload* e mantendo latência e custo por requisição sob controle mesmo em conversas longas.
 3. **Persistência do turno em transação única.** A gravação da resposta do agente (mensagem + análise + *red flags* + recomendações + perguntas) ocorre em uma única transação do Prisma (`saveAgentTurn`), reduzindo *round-trips* ao banco e garantindo atomicidade.
 4. **Renderização no servidor e navegação client-side.** O uso de *Server Components*/SSR no carregamento inicial reduz o trabalho no cliente, enquanto a navegação subsequente é *client-side* (sem *reloads*), tornando a interface mais responsiva (ver *Modelo de Renderização*).
 
 ## Arquitetura
 
-O sistema segue uma arquitetura em camadas. O **frontend** (Next.js) cuida da interface e de um proxy seguro; o **backend** (NestJS) concentra a lógica de negócio em módulos seguindo Clean Architecture/DDD (entidades → repositórios → casos de uso → controladores); a **persistência** usa Prisma sobre PostgreSQL (Supabase); e a **IA** é acessada por uma camada abstrata (`ILLMProvider`) que conversa com Gemini ou Claude.
+O sistema segue uma arquitetura em camadas. O **frontend** (Next.js) cuida da interface e de um proxy seguro; o **backend** (NestJS) concentra a lógica de negócio em módulos seguindo Clean Architecture/DDD (entidades → repositórios → casos de uso → controladores); a **persistência** usa Prisma sobre PostgreSQL (Supabase); e a **IA** é acessada por uma camada abstrata (`ILLMProvider`) que conversa com o Google Gemini.
 
 **Fluxo de uma análise:** o usuário envia uma mensagem → o backend persiste a mensagem, monta o contexto (histórico + dados da moto + última análise + perguntas + conhecimento do catálogo) → chama o LLM exigindo saída estruturada → persiste a resposta, a análise e as perguntas → o frontend exibe o resultado.
 
@@ -215,7 +215,7 @@ erDiagram
 ### Artefato 5 — Arquitetura em camadas e componentes reutilizados
 
 - **Camadas:** Apresentação (Next.js) · Aplicação/Negócio (NestJS — casos de uso) · Domínio (entidades + interfaces de repositório) · Infraestrutura (Prisma/PostgreSQL, provedores de LLM).
-- **Padrões reutilizados:** Repository Pattern, Injeção de Dependência, DTOs com validação, *Guard* de autenticação global e a interface `ILLMProvider` (padrão Strategy) para abstrair o provedor de IA.
+- **Padrões reutilizados:** Repository Pattern, Injeção de Dependência, DTOs com validação, *Guard* de autenticação global e a interface `ILLMProvider` para isolar o acesso ao provedor de IA (Google Gemini).
 
 ## Validação
 
@@ -268,7 +268,6 @@ O projeto entregou uma aplicação web funcional e publicada que cumpre o objeti
 - SUPABASE. *Documentation*. Disponível em: https://supabase.com/docs.
 - TAILWIND CSS. *Documentation*. Disponível em: https://tailwindcss.com/docs.
 - GOOGLE. *Gemini API Documentation*. Disponível em: https://ai.google.dev/docs.
-- ANTHROPIC. *Claude API Documentation*. Disponível em: https://docs.anthropic.com.
 - LEWIS, P. et al. *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks*. Advances in Neural Information Processing Systems (NeurIPS), 2020.
 - WAZLAWICK, Raul Sidnei. **Metodologia de pesquisa para ciência da computação**. Rio de Janeiro: Elsevier, 2009.
 

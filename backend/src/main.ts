@@ -24,6 +24,6 @@ async function bootstrap() {
 
   const port = config.get<number>('PORT') ?? 3001;
   await app.listen(port, '0.0.0.0');
-  console.log(`🚀 MotoCheck AI API rodando em http://localhost:${port}`);
+  console.log(`MotoCheck AI API rodando em http://localhost:${port}`);
 }
 void bootstrap();

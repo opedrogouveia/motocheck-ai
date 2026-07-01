@@ -6,8 +6,8 @@ import { normalizeAgentResponse } from './agent.types';
 import { parseJsonLoose } from './parseJson';
 
 /**
- * Provedor Gemini (Google) — opção gratuita para desenvolvimento.
- * Usa responseMimeType JSON para forçar saída estruturada.
+ * Provedor de IA baseado no Google Gemini.
+ * Usa responseMimeType JSON para forçar a saída estruturada do agente.
  */
 @Injectable()
 export class GeminiProvider extends ILLMProvider {
@@ -22,7 +22,7 @@ export class GeminiProvider extends ILLMProvider {
       this.logger.warn('GEMINI_API_KEY não definida — chamadas ao Gemini vão falhar.');
     }
     this.client = new GoogleGenerativeAI(apiKey ?? '');
-    this.modelName = this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.0-flash';
+    this.modelName = this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash';
   }
 
   async generate(params: LLMGenerateParams): Promise<LLMResult> {

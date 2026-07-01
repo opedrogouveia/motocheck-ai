@@ -1,4 +1,4 @@
-# 🧠 Agente MotoCheck AI — design e "treinamento"
+# Agente MotoCheck AI — design e especialização
 
 Este módulo concentra TODO o comportamento do agente. **Não há fine-tuning** (treino de modelo). O agente é especializado por três fontes, todas editáveis e versionadas no Git:
 
@@ -32,13 +32,9 @@ A cada mensagem, o [`SendMessageUseCase`](../conversations/useCases/SendMessageU
 4. Adiciona a memória da conversa (última análise, respostas/recusas do vendedor).
 5. Chama o LLM exigindo saída estruturada e persiste o resultado.
 
-## Trocar o provedor de LLM
+## Provedor de LLM
 
-Defina `LLM_PROVIDER` no `.env`:
-- `gemini` → grátis, para desenvolvimento ([`llm/GeminiProvider.ts`](llm/GeminiProvider.ts));
-- `claude` → pago, mais preciso, para demo/entrega ([`llm/ClaudeProvider.ts`](llm/ClaudeProvider.ts)).
-
-O modelo específico vem de `GEMINI_MODEL` / `ANTHROPIC_MODEL`.
+O acesso ao modelo é isolado pela interface [`llm/ILLMProvider.ts`](llm/ILLMProvider.ts), implementada por [`llm/GeminiProvider.ts`](llm/GeminiProvider.ts) (Google Gemini). O modelo específico vem de `GEMINI_MODEL` no `.env` (ex.: `gemini-2.5-flash`).
 
 ## Comportamento atual
 

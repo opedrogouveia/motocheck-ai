@@ -1,32 +1,16 @@
-import { Module, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Module } from '@nestjs/common';
 import { ILLMProvider } from './llm/ILLMProvider';
 import { GeminiProvider } from './llm/GeminiProvider';
-import { ClaudeProvider } from './llm/ClaudeProvider';
 
 /**
- * Módulo de IA. Expõe ILLMProvider, resolvido em tempo de execução
- * conforme a env LLM_PROVIDER ("gemini" | "claude").
- * Trocar de provedor = trocar 1 variável de ambiente.
+ * Módulo de IA. Expõe o acesso ao modelo de linguagem (Google Gemini)
+ * por trás da interface ILLMProvider, isolando o restante da aplicação
+ * dos detalhes do provedor.
  */
 @Module({
   providers: [
     GeminiProvider,
-    ClaudeProvider,
-    {
-      provide: ILLMProvider,
-      inject: [ConfigService, GeminiProvider, ClaudeProvider],
-      useFactory: (
-        config: ConfigService,
-        gemini: GeminiProvider,
-        claude: ClaudeProvider,
-      ): ILLMProvider => {
-        const provider = (config.get<string>('LLM_PROVIDER') ?? 'gemini').toLowerCase();
-        const chosen = provider === 'claude' ? claude : gemini;
-        new Logger('AiModule').log(`Provedor de IA ativo: ${provider}`);
-        return chosen;
-      },
-    },
+    { provide: ILLMProvider, useExisting: GeminiProvider },
   ],
   exports: [ILLMProvider],
 })

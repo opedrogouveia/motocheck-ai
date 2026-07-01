@@ -19,7 +19,8 @@ export interface LLMResult {
 }
 
 /**
- * Abstração de provedor de LLM. Implementada por Gemini e Claude.
+ * Abstração do provedor de modelo de linguagem (LLM), isolando a
+ * aplicação dos detalhes da API do Google Gemini.
  * Usada como token de injeção (classe abstrata) no NestJS.
  */
 export abstract class ILLMProvider {
