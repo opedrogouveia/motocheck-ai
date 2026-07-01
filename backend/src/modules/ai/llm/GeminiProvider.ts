@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { ILLMProvider, LLMGenerateParams, LLMResult } from './ILLMProvider';
+import { ILLMProvider, LLMGenerateParams, LLMJsonResult, LLMResult } from './ILLMProvider';
 import { normalizeAgentResponse } from './agent.types';
 import { parseJsonLoose } from './parseJson';
 
@@ -44,6 +44,31 @@ export class GeminiProvider extends ILLMProvider {
 
     return {
       data: normalizeAgentResponse(parseJsonLoose(text)),
+      model: this.modelName,
+      usage: {
+        input: usage?.promptTokenCount ?? 0,
+        output: usage?.candidatesTokenCount ?? 0,
+      },
+    };
+  }
+
+  async generateJSON(params: { system: string; prompt: string }): Promise<LLMJsonResult> {
+    const model = this.client.getGenerativeModel({
+      model: this.modelName,
+      systemInstruction: params.system,
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.3 },
+    });
+
+    const result = await this.withRetry(() =>
+      model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: params.prompt }] }],
+      } as any),
+    );
+    const text = result.response.text();
+    const usage = result.response.usageMetadata;
+
+    return {
+      raw: parseJsonLoose(text),
       model: this.modelName,
       usage: {
         input: usage?.promptTokenCount ?? 0,

@@ -1,4 +1,13 @@
-import { IsBoolean, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateConversationDTO {
   @IsOptional()
@@ -19,6 +28,14 @@ export class SendMessageDTO {
   @MinLength(1, { message: 'A mensagem não pode ser vazia.' })
   @MaxLength(8000, { message: 'Mensagem muito longa (máx. 8000 caracteres).' })
   content!: string;
+}
+
+export class CompareConversationsDTO {
+  @IsArray()
+  @ArrayMinSize(2, { message: 'Selecione ao menos duas conversas para comparar.' })
+  @ArrayMaxSize(3, { message: 'Compare no máximo três conversas por vez.' })
+  @IsString({ each: true })
+  conversationIds!: string[];
 }
 
 export class AnswerQuestionDTO {

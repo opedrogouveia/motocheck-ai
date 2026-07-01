@@ -6,6 +6,7 @@ import { PrismaConversationsRepository } from './infra/prisma/PrismaConversation
 import { ConversationsController } from './infra/http/ConversationsController';
 import { SendMessageUseCase } from './useCases/SendMessageUseCase';
 import { AnswerQuestionUseCase } from './useCases/AnswerQuestionUseCase';
+import { CompareConversationsUseCase } from './useCases/CompareConversationsUseCase';
 
 @Module({
   imports: [AiModule, MotorcycleModelsModule],
@@ -14,6 +15,7 @@ import { AnswerQuestionUseCase } from './useCases/AnswerQuestionUseCase';
     { provide: IConversationsRepository, useClass: PrismaConversationsRepository },
     SendMessageUseCase,
     AnswerQuestionUseCase,
+    CompareConversationsUseCase,
   ],
 })
 export class ConversationsModule {}

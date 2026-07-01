@@ -12,8 +12,10 @@ import {
 import { IConversationsRepository } from '../../domain/IConversationsRepository';
 import { SendMessageUseCase } from '../../useCases/SendMessageUseCase';
 import { AnswerQuestionUseCase } from '../../useCases/AnswerQuestionUseCase';
+import { CompareConversationsUseCase } from '../../useCases/CompareConversationsUseCase';
 import {
   AnswerQuestionDTO,
+  CompareConversationsDTO,
   CreateConversationDTO,
   RenameConversationDTO,
   SendMessageDTO,
@@ -28,11 +30,17 @@ export class ConversationsController {
     private conversations: IConversationsRepository,
     private sendMessageUseCase: SendMessageUseCase,
     private answerQuestionUseCase: AnswerQuestionUseCase,
+    private compareUseCase: CompareConversationsUseCase,
   ) {}
 
   @Post()
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateConversationDTO) {
     return this.conversations.create(user.userId, dto.title);
+  }
+
+  @Post('compare')
+  compare(@CurrentUser() user: AuthUser, @Body() dto: CompareConversationsDTO) {
+    return this.compareUseCase.execute(user.userId, dto.conversationIds);
   }
 
   @Get()
