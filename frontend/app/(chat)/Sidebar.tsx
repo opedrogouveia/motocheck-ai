@@ -5,12 +5,16 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { ConversationSummary } from "@/lib/types";
 import { useConversations } from "./ConversationsContext";
+import { useSidebar } from "./SidebarContext";
 import Modal from "./Modal";
 
 export default function Sidebar({ onLogout }: { onLogout: () => void }) {
   const { conversations, loading, createAndOpen, remove, rename } = useConversations();
+  const { mobileOpen, collapsed, setMobileOpen, toggle } = useSidebar();
   const params = useParams<{ id?: string }>();
   const activeId = params?.id;
+
+  const closeOnMobile = () => setMobileOpen(false);
 
   const [renameTarget, setRenameTarget] = useState<ConversationSummary | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -45,13 +49,41 @@ export default function Sidebar({ onLogout }: { onLogout: () => void }) {
   }
 
   return (
-    <aside className="flex h-full w-72 shrink-0 flex-col border-r border-border bg-surface">
+    <aside
+      className={`fixed inset-y-0 left-0 z-40 flex h-full w-72 flex-col border-r border-border bg-surface transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:shrink-0 lg:translate-x-0 lg:transition-[width] lg:duration-200 ${
+        mobileOpen ? "translate-x-0" : "-translate-x-full"
+      } ${collapsed ? "lg:w-0 lg:overflow-hidden lg:border-r-0" : "lg:w-72"}`}
+    >
       <div className="p-4">
-        <Link href="/" className="block text-lg font-bold">
-          MotoCheck <span className="text-brand">AI</span>
-        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/" onClick={closeOnMobile} className="text-lg font-bold">
+            MotoCheck <span className="text-brand">AI</span>
+          </Link>
+          <button
+            onClick={toggle}
+            aria-label="Esconder a barra lateral"
+            title="Esconder"
+            className="shrink-0 rounded-lg p-1.5 text-muted transition hover:bg-background"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        </div>
         <button
-          onClick={() => void createAndOpen()}
+          onClick={() => {
+            void createAndOpen();
+            closeOnMobile();
+          }}
           className="mt-3 w-full rounded-lg btn-grad py-2 text-sm font-medium text-white transition hover:opacity-90"
         >
           + Nova conversa
@@ -71,7 +103,7 @@ export default function Sidebar({ onLogout }: { onLogout: () => void }) {
                   c.id === activeId ? "bg-brand/10 text-brand" : "hover:bg-background"
                 }`}
               >
-                <Link href={`/c/${c.id}`} className="flex-1 truncate">
+                <Link href={`/c/${c.id}`} onClick={closeOnMobile} className="flex-1 truncate">
                   {c.title}
                 </Link>
                 <button

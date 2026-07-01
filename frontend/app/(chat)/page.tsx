@@ -1,12 +1,16 @@
 "use client";
 
 import { useConversations } from "./ConversationsContext";
+import { SidebarToggle } from "./SidebarContext";
 
 export default function Home() {
   const { createAndOpen } = useConversations();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
+    <div className="relative flex flex-1 flex-col items-center justify-center p-8 text-center">
+      <div className="absolute left-3 top-3">
+        <SidebarToggle />
+      </div>
       <h1 className="text-3xl font-bold">
         MotoCheck <span className="text-brand">AI</span>
       </h1>

@@ -10,6 +10,7 @@ import type {
   QuestionView,
 } from "@/lib/types";
 import { useConversations } from "../../ConversationsContext";
+import { SidebarToggle } from "../../SidebarContext";
 import AnalysisPanel from "../../AnalysisPanel";
 
 const CONTINUE_PROMPT =
@@ -111,11 +112,12 @@ export default function ConversationPage() {
   return (
     <>
       {/* Cabeçalho */}
-      <header className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
-        <h2 className="truncate font-semibold">{title}</h2>
+      <header className="flex items-center gap-2 border-b border-border bg-surface px-3 py-3 sm:px-4">
+        <SidebarToggle />
+        <h2 className="min-w-0 flex-1 truncate font-semibold">{title}</h2>
         <button
           onClick={() => setShowPanel((v) => !v)}
-          className="rounded-lg border border-border px-3 py-1 text-sm lg:hidden"
+          className="shrink-0 rounded-lg border border-border px-3 py-1 text-sm lg:hidden"
         >
           {showPanel ? "Fechar" : "Análise"}
         </button>
@@ -191,7 +193,7 @@ export default function ConversationPage() {
 
         {/* Painel como overlay em telas pequenas */}
         {showPanel && (
-          <div className="absolute inset-0 top-[57px] z-10 flex flex-col overflow-hidden bg-background lg:hidden">
+          <div className="absolute inset-0 z-10 flex flex-col overflow-hidden bg-background lg:hidden">
             <AnalysisPanel
               analysis={analysis}
               motorcycle={motorcycle}
