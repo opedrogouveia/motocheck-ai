@@ -2,7 +2,7 @@
  * CONHECIMENTO GERAL de compra de moto usada — vale para QUALQUER moto,
  * mesmo as que não estão no catálogo. É a "expertise de base" do agente.
  *
- * 👉 Edite aqui para deixar o agente mais esperto de forma ampla
+ * Edite este arquivo para ampliar o conhecimento geral do agente
  * (o catálogo `MotorcycleModel`/`KnownIssue` cuida do conhecimento por modelo).
  */
 export const GENERAL_KNOWLEDGE = `CONHECIMENTO GERAL (aplique a qualquer moto, não só às do catálogo):

@@ -1,17 +1,19 @@
 /**
  * MONTADOR do prompt de sistema do agente MotoCheck AI.
  *
- * Junta as 3 fontes de "treinamento" do agente:
- *   1. Persona  -> persona.ts        (quem ele é)
- *   2. Regras   -> outputRules.ts    (formato de saída)
- *   3. Exemplos -> examples.ts       (few-shot, opcional)
- * + Conhecimento (RAG do catálogo) e memória da conversa, montados aqui.
+ * Junta as fontes de especialização do agente:
+ *   1. Persona           -> persona.ts         (quem ele é)
+ *   2. Regras de saída   -> outputRules.ts     (formato da resposta)
+ *   3. Conhecimento geral-> domainKnowledge.ts (expertise base, vale p/ qualquer moto)
+ *   4. Exemplos          -> examples.ts        (few-shot, opcional)
+ * + Conhecimento por modelo (RAG do catálogo) e memória da conversa, montados aqui.
  *
  * NÃO é fine-tuning: especializar o agente = editar esses arquivos e
- * enriquecer o catálogo (MotorcycleModel / KnownIssue). Ver AGENT.md.
+ * enriquecer o catálogo (MotorcycleModel / KnownIssue). Ver README.md.
  */
 import { BASE_PERSONA } from './persona';
 import { OUTPUT_RULES } from './outputRules';
+import { GENERAL_KNOWLEDGE } from './domainKnowledge';
 import { FEW_SHOT_EXAMPLES } from './examples';
 
 export interface KnownIssueContext {
@@ -129,6 +131,8 @@ export function buildSystemPrompt(ctx: AgentContext): string {
     BASE_PERSONA +
     '\n\n' +
     OUTPUT_RULES +
+    '\n\n' +
+    GENERAL_KNOWLEDGE +
     examples +
     formatKnowledge(ctx.knowledge) +
     formatMemory(ctx)
