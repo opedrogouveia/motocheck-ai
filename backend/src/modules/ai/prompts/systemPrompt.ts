@@ -125,10 +125,21 @@ function formatMemory(ctx: AgentContext): string {
   return parts.length ? `\n\nMEMÓRIA DA CONVERSA:\n${parts.join('\n\n')}` : '';
 }
 
+function formatCurrentDate(): string {
+  const today = new Intl.DateTimeFormat('pt-BR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
+  return `DATA ATUAL: hoje é ${today}. Use isso como referência de tempo — NÃO trate um ano de fabricação/modelo igual ou próximo ao ano atual como "impossível" ou incoerente; ele é plausível para uma moto nova ou recente. Só questione a data se ela estiver claramente no futuro distante ou for internamente inconsistente com o restante do anúncio.`;
+}
+
 export function buildSystemPrompt(ctx: AgentContext): string {
   const examples = FEW_SHOT_EXAMPLES.trim() ? `\n\n${FEW_SHOT_EXAMPLES.trim()}` : '';
   return (
     BASE_PERSONA +
+    '\n\n' +
+    formatCurrentDate() +
     '\n\n' +
     OUTPUT_RULES +
     '\n\n' +
