@@ -45,6 +45,10 @@ A ausência de uma ferramenta acessível que oriente o comprador leigo exatament
 - **Inteligência Artificial — Google Gemini:** o acesso ao modelo é isolado por uma interface `ILLMProvider`, com implementação para o **Google Gemini** (`@google/generative-ai`). A saída é forçada a JSON estruturado (`responseMimeType`) e normalizada antes de ser persistida. A especialização do agente vem de *prompt* + RAG, sem *fine-tuning*.
 - **Deploy:** **Vercel** (frontend) e **Render** (backend), com banco no **Supabase** — integração contínua via Git (push → deploy automático).
 
+### Uso de Inteligência Artificial no Desenvolvimento
+
+Além do Google Gemini — que é a IA que compõe o próprio produto, como descrito ao longo deste documento —, foram utilizadas ferramentas de IA generativa como apoio ao processo de desenvolvimento: assistentes de codificação baseados em LLM, usados para geração e revisão de trechos de código, sugestões de refatoração e aceleração da implementação de decisões já definidas. As decisões de arquitetura, a modelagem de domínio, a escolha de tecnologias, a especificação dos requisitos e os critérios de segurança e performance foram definidos pelo autor, que também revisou, testou e ajustou cada funcionalidade entregue. O uso de assistentes de IA no fluxo de desenvolvimento é uma prática cada vez mais comum na engenharia de software profissional, análoga ao uso de outras ferramentas de produtividade (autocomplete, linters, geradores de scaffolding).
+
 ## Descrição da Solução
 
 O MotoCheck AI é uma aplicação web no formato de **chat conversacional**, semelhante a assistentes de IA populares, porém com um diferencial: o agente é **especializado em motos usadas**. O usuário cria uma conta e inicia uma ou mais conversas; em cada conversa, cola o texto de um anúncio e dialoga com o agente.
@@ -261,14 +265,20 @@ O projeto entregou uma aplicação web funcional e publicada que cumpre o objeti
 
 ## Referências Bibliográficas
 
-- NEXT.JS. *Documentation*. Vercel. Disponível em: https://nextjs.org/docs.
-- NESTJS. *Documentation*. Disponível em: https://docs.nestjs.com.
-- PRISMA. *Documentation*. Disponível em: https://www.prisma.io/docs.
-- POSTGRESQL. *Documentation*. Disponível em: https://www.postgresql.org/docs.
-- SUPABASE. *Documentation*. Disponível em: https://supabase.com/docs.
-- TAILWIND CSS. *Documentation*. Disponível em: https://tailwindcss.com/docs.
-- GOOGLE. *Gemini API Documentation*. Disponível em: https://ai.google.dev/docs.
-- LEWIS, P. et al. *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks*. Advances in Neural Information Processing Systems (NeurIPS), 2020.
-- WAZLAWICK, Raul Sidnei. **Metodologia de pesquisa para ciência da computação**. Rio de Janeiro: Elsevier, 2009.
+NEXT.JS. **Next.js documentation**. [*S. l.*]: Vercel, 2026. Disponível em: https://nextjs.org/docs. Acesso em: 1 jul. 2026.
 
-> _Observação: formatar as referências conforme a norma exigida (ABNT) na versão final._
+NESTJS. **NestJS documentation**. [*S. l.: s. n.*], 2026. Disponível em: https://docs.nestjs.com. Acesso em: 1 jul. 2026.
+
+PRISMA. **Prisma documentation**. [*S. l.: s. n.*], 2026. Disponível em: https://www.prisma.io/docs. Acesso em: 1 jul. 2026.
+
+POSTGRESQL GLOBAL DEVELOPMENT GROUP. **PostgreSQL documentation**. [*S. l.: s. n.*], 2026. Disponível em: https://www.postgresql.org/docs. Acesso em: 1 jul. 2026.
+
+SUPABASE. **Supabase documentation**. [*S. l.: s. n.*], 2026. Disponível em: https://supabase.com/docs. Acesso em: 1 jul. 2026.
+
+TAILWIND LABS. **Tailwind CSS documentation**. [*S. l.: s. n.*], 2026. Disponível em: https://tailwindcss.com/docs. Acesso em: 1 jul. 2026.
+
+GOOGLE. **Gemini API documentation**. [*S. l.: s. n.*], 2026. Disponível em: https://ai.google.dev/docs. Acesso em: 1 jul. 2026.
+
+LEWIS, Patrick *et al.* Retrieval-augmented generation for knowledge-intensive NLP tasks. **In**: ADVANCES IN NEURAL INFORMATION PROCESSING SYSTEMS (NeurIPS), 33., 2020. **Anais [...]**. [*S. l.: s. n.*], 2020.
+
+WAZLAWICK, Raul Sidnei. **Metodologia de pesquisa para ciência da computação**. Rio de Janeiro: Elsevier, 2009.
