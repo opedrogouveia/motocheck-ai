@@ -17,9 +17,25 @@ const HISTORY_LIMIT = 20;
 function normalizeQuestion(q: string): string {
   return q
     .toLowerCase()
+    .replace(/[\p{P}]/gu, ' ')
     .replace(/\s+/g, ' ')
-    .replace(/[?.!]/g, '')
     .trim();
+}
+
+function tokenize(q: string): Set<string> {
+  return new Set(normalizeQuestion(q).split(' ').filter(Boolean));
+}
+
+// Perguntas reformuladas com outras palavras sobre o mesmo assunto (comum
+// quando o vendedor não responde e a IA gera uma variação na rodada
+// seguinte) têm alta sobreposição de palavras mesmo sem serem idênticas.
+const SIMILARITY_THRESHOLD = 0.72;
+
+function isSimilarQuestion(a: Set<string>, b: Set<string>): boolean {
+  if (a.size === 0 || b.size === 0) return false;
+  let shared = 0;
+  for (const word of a) if (b.has(word)) shared++;
+  return shared / Math.min(a.size, b.size) >= SIMILARITY_THRESHOLD;
 }
 
 @Injectable()
@@ -105,12 +121,14 @@ export class SendMessageUseCase {
 
     const { data, model, usage } = result;
 
-    // 6) Deduplica perguntas já existentes
-    const existing = new Set((detail?.suggestedQuestions ?? []).map((q) => normalizeQuestion(q.question)));
+    // 6) Deduplica perguntas já existentes (inclui variações reformuladas
+    // da mesma pergunta, não só texto idêntico)
+    const existingTokens = (detail?.suggestedQuestions ?? []).map((q) => tokenize(q.question));
     const newQuestions = (data.analysis?.suggestedQuestions ?? []).filter((q) => {
-      const key = normalizeQuestion(q);
-      if (!key || existing.has(key)) return false;
-      existing.add(key);
+      const tokens = tokenize(q);
+      if (tokens.size === 0) return false;
+      if (existingTokens.some((prev) => isSimilarQuestion(tokens, prev))) return false;
+      existingTokens.push(tokens);
       return true;
     });
 

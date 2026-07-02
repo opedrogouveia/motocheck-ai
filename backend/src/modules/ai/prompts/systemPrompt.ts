@@ -113,7 +113,7 @@ function formatMemory(ctx: AgentContext): string {
   const pending = ctx.questions.filter((q) => q.status === 'PENDING');
   if (pending.length) {
     parts.push(
-      'PERGUNTAS AINDA SEM RESPOSTA (o vendedor NÃO respondeu — trate como informação desconhecida, NÃO assuma nenhuma resposta para elas):\n' +
+      'PERGUNTAS AINDA SEM RESPOSTA (o vendedor NÃO respondeu — trate como informação desconhecida, NÃO assuma nenhuma resposta para elas). Elas já estão visíveis ao usuário, então NÃO as repita nem crie uma versão reformulada com outras palavras sobre o mesmo assunto em "suggestedQuestions" — gere apenas perguntas sobre assuntos genuinamente novos:\n' +
         pending.map((q) => `  - ${q.question}`).join('\n'),
     );
   }
