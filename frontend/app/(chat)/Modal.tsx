@@ -14,10 +14,15 @@ export default function Modal({ open, onClose, title, children }: Props) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        // Fase de captura: intercepta o Esc antes que outros atalhos da
+        // página (ex.: voltar para a home) reajam ao mesmo evento.
+        e.stopPropagation();
+        onClose();
+      }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [open, onClose]);
 
   if (!open) return null;

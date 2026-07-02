@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import type {
   AnalysisView,
@@ -19,6 +19,7 @@ const CONTINUE_PROMPT =
 export default function ConversationPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
+  const router = useRouter();
   const { refresh } = useConversations();
 
   const [title, setTitle] = useState("Conversa");
@@ -59,6 +60,22 @@ export default function ConversationPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
+
+  // Esc fecha o painel de análise no mobile; se já estiver fechado, volta
+  // para a home ("Iniciar nova análise"). Não dispara se um modal (que
+  // intercepta o Esc na fase de captura) estiver aberto.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (showPanel) {
+        setShowPanel(false);
+        return;
+      }
+      router.push("/");
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showPanel, router]);
 
   const send = useCallback(async (override?: string) => {
     const content = (override ?? input).trim();
