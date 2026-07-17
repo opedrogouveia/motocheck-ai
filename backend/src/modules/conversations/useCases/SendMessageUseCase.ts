@@ -73,12 +73,15 @@ export class SendMessageUseCase {
       .join(' ')
       .toLowerCase();
 
-    const relevantModels = allModels
-      .filter(
-        (m) =>
-          haystack.includes(m.name.toLowerCase()) || haystack.includes(m.brand.toLowerCase()),
-      )
-      .slice(0, 5);
+    // Prioriza o modelo exato (casou pelo NOME) e só então completa com outros
+    // da mesma marca (casou pela MARCA). Sem isso, marcas com muitos modelos no
+    // catálogo (ex.: Honda) inundam o filtro e o `.slice(0, 5)` pode deixar o
+    // modelo exato de fora.
+    const nameMatches = allModels.filter((m) => haystack.includes(m.name.toLowerCase()));
+    const brandMatches = allModels.filter(
+      (m) => !nameMatches.includes(m) && haystack.includes(m.brand.toLowerCase()),
+    );
+    const relevantModels = [...nameMatches, ...brandMatches].slice(0, 5);
 
     const knowledge: ModelKnowledgeContext[] = relevantModels.map((m) => ({
       brand: m.brand,
